@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>网页右下角的信息框</title>
+</head>
+<style type="text/css">
+
+    #winpop {
+        width: 300px;
+        height: 0px;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        border: 1px solid #666;
+        margin: 0;
+        padding: 1px;
+        overflow: hidden;
+        display: none;
+    }
+
+    #winpop .title {
+        width: 100%;
+        height: 22px;
+        line-height: 20px;
+        background: #FFCC00;
+        font-weight: bold;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    #winpop .con {
+        width: 100%;
+        height: 90px;
+        line-height: 80px;
+        font-weight: bold;
+        font-size: 12px;
+        color: #FF0000;
+        text-decoration: underline;
+        text-align: center
+    }
+
+    #silu {
+        font-size: 12px;
+        color: #666;
+        position: absolute;
+        right: 0;
+        text-align: left;
+        text-decoration: underline;
+        line-height: 22px;
+    }
+
+    .close {
+        position: absolute;
+        right: 4px;
+        top: -1px;
+        color: #FFF;
+        cursor: pointer
+    }
+</style>
+
+
+<script type="text/javascript">
+
+    function tips_pop() {
+
+        var MsgPop = document.getElementById("winpop");
+
+        MsgPop.style.height = '0px';
+
+        var popH = parseInt(MsgPop.style.height);//将对象的高度转化为数字
+
+        if (popH == 0) {
+            MsgPop.style.display = "block";//显示隐藏的窗口
+            show = setInterval("changeH('up')", 2);
+        } else {
+            hide = setInterval("changeH('down')", 2);
+        }
+
+        document.getElementById("con_text").innerHTML = event.data;
+
+        setTimeout("tips_close()", 1200); //30秒后消息自动消失
+
+    }
+
+    function tips_close() {
+        var close_tips = document.getElementById("winpop");
+        close_tips.style.display = "none";
+    }
+
+    function changeH(str) {
+        var MsgPop = document.getElementById("winpop");
+        var popH = parseInt(MsgPop.style.height);
+        if (str == "up") {
+            if (popH <= 100) {
+                MsgPop.style.height = (popH + 4).toString() + "px";
+            } else {
+                clearInterval(show);
+            }
+        }
+        if (str == "down") {
+            if (popH >= 4) {
+                MsgPop.style.height = (popH - 4).toString() + "px";
+            } else {
+                clearInterval(hide);
+                MsgPop.style.display = "none"; //隐藏DIV
+            }
+        }
+    }
+</script>
+
+
+<script type="text/JavaScript">
+    var websocket = null;
+
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://" + window.location.host + "/chat");
+    } else {
+        alert('Not support websocket');
+    }
+
+    //连接发生错误的回调方法
+    websocket.onerror = function() {
+        setMessageInnerHTML("error");
+    };
+
+    //连接成功建立的回调方法
+    websocket.onopen = function(event) {
+        setMessageInnerHTML("open");
+    };
+
+    //接收到消息的回调方法
+    websocket.onmessage = function() {
+        setMessageInnerHTML(event.data);
+        tips_pop();
+    };
+
+    //连接关闭的回调方法
+    websocket.onclose = function() {
+        setMessageInnerHTML("close");
+    };
+
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function() {
+        websocket.close();
+    };
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML) {
+        document.getElementById('message').innerHTML += innerHTML + '<br/>';
+    }
+
+    //关闭连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+    //发送消息
+    function send() {
+        var message = document.getElementById('text').value;
+        websocket.send(message);
+    }
+</script>
+
+<body>
+<div id="silu">
+    <input id="text" type="text" />
+    <button onclick="send()">Send</button>
+    <div id="message"></div>
+</div>
+
+<div id="winpop">
+    <div class="title">
+        您有新的短消息！<span class="close" onclick="tips_close()">X</span>
+    </div>
+    <div id="con_text" class="con">1条未读信息</div>
+</div>
+</body>
+</html>
